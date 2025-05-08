@@ -1,0 +1,289 @@
+class Arma {
+    constructor(nombre, precioBase, material, peso) {
+        this.nombre = nombre;
+        this.precioBase = precioBase;
+        this.material = material;
+        this.peso = peso;
+    }
+
+    getNombre() {
+        return this.nombre;
+    }
+
+    getPrecioBase() {
+        return this.precioBase;
+    }
+
+    getMaterial() {
+        return this.material;
+    }
+
+    getPeso() {
+        return this.peso;
+    }
+
+    calcularPrecioFinal() {
+        throw new Error("Método calcularPrecioFinal debe ser implementado por la subclase");
+    }
+
+    toString() {
+        return `${this.nombre} (${this.material}, ${this.peso}g)`;
+    }
+}
+
+class Florete extends Arma {
+    constructor(nombre, precioBase, material, peso, longitud, tipoGrip) {
+        super(nombre, precioBase, material, peso);
+        this.longitud = longitud;
+        this.tipoGrip = tipoGrip;
+    }
+
+    calcularPrecioFinal() {
+        const factor = (this.longitud > 90 || this.tipoGrip === "italiano") ? 1.1 : 1.0;
+        return this.precioBase * factor;
+    }
+
+    toString() {
+        return `${super.toString()}, Longitud: ${this.longitud}cm, Grip: ${this.tipoGrip}`;
+    }
+}
+
+class Espada extends Arma {
+    constructor(nombre, precioBase, material, peso, anchoHoja, tipoFilo) {
+        super(nombre, precioBase, material, peso);
+        this.anchoHoja = anchoHoja;
+        this.tipoFilo = tipoFilo;
+    }
+
+    calcularPrecioFinal() {
+        return this.anchoHoja > 3 ? this.precioBase * 1.15 : this.precioBase;
+    }
+
+    toString() {
+        return `${super.toString()}, Ancho Hoja: ${this.anchoHoja}cm, Filo: ${this.tipoFilo}`;
+    }
+}
+
+class Sable extends Arma {
+    constructor(nombre, precioBase, material, peso, curvatura, flexibilidad) {
+        super(nombre, precioBase, material, peso);
+        this.curvatura = curvatura;
+        this.flexibilidad = flexibilidad;
+    }
+
+    calcularPrecioFinal() {
+        const factor = (this.curvatura > 10 || this.flexibilidad > 5) ? 1.12 : 1.0;
+        return this.precioBase * factor;
+    }
+
+    toString() {
+        return `${super.toString()}, Curvatura: ${this.curvatura}, Flexibilidad: ${this.flexibilidad}`;
+    }
+}
+
+class Cliente {
+    constructor(idCliente, nombre, email, tipo) {
+        this.idCliente = idCliente;
+        this.nombre = nombre;
+        this.email = email;
+        this.tipo = tipo;
+    }
+
+    getIdCliente() {
+        return this.idCliente;
+    }
+
+    getNombre() {
+        return this.nombre;
+    }
+
+    getEmail() {
+        return this.email;
+    }
+
+    getTipo() {
+        return this.tipo;
+    }
+
+    aplicarDescuento() {
+        return this.tipo === "Premium" ? 0.1 : 0.0;
+    }
+}
+
+class Inventario {
+    constructor() {
+        this.armas = [];
+        this.stock = new Map();
+    }
+
+    agregarArma(arma, cantidad) {
+        if (!this.armas.includes(arma)) {
+            this.armas.push(arma);
+        }
+        this.stock.set(arma, (this.stock.get(arma) || 0) + cantidad);
+    }
+
+    reducirStock(arma, cantidad) {
+        const currentStock = this.stock.get(arma) || 0;
+        if (currentStock >= cantidad) {
+            this.stock.set(arma, currentStock - cantidad);
+            return true;
+        }
+        return false;
+    }
+
+    consultarStock(arma) {
+        return this.stock.get(arma) || 0;
+    }
+
+    listarArmasDisponibles() {
+        return [...this.armas];
+    }
+}
+
+class ItemVenta {
+    constructor(arma, cantidad) {
+        this.arma = arma;
+        this.cantidad = cantidad;
+        this.precioUnitario = arma.calcularPrecioFinal();
+    }
+
+    getSubtotal() {
+        return this.precioUnitario * this.cantidad;
+    }
+
+    toString() {
+        return `${this.cantidad} x ${this.arma.getNombre()} ($${this.precioUnitario} c/u) = $${this.getSubtotal()}`;
+    }
+}
+
+class Venta {
+    constructor(idVenta, cliente, fecha) {
+        this.idVenta = idVenta;
+        this.cliente = cliente;
+        this.items = [];
+        this.fecha = fecha;
+        this.estado = "Pendiente";
+    }
+
+    agregarItem(arma, cantidad) {
+        this.items.push(new ItemVenta(arma, cantidad));
+    }
+
+    calcularTotal() {
+        return this.items.reduce((total, item) => total + item.getSubtotal(), 0);
+    }
+
+    aplicarDescuento() {
+        return this.calcularTotal() * (1 - this.cliente.aplicarDescuento());
+    }
+
+    registrarVenta(inventario) {
+        for (const item of this.items) {
+            if (!inventario.reducirStock(item.arma, item.cantidad)) {
+                return false;
+            }
+        }
+        this.estado = "Completada";
+        return true;
+    }
+
+    generarReporte() {
+        let reporte = `Venta #${this.idVenta} - Cliente: ${this.cliente.getNombre()} - Fecha: ${this.fecha}\n`;
+        for (const item of this.items) {
+            reporte += `  ${item.toString()}\n`;
+        }
+        const total = this.calcularTotal();
+        const totalConDescuento = this.aplicarDescuento();
+        reporte += `Total sin descuento: $${total}\nTotal con descuento: $${totalConDescuento}\nEstado: ${this.estado}`;
+        return reporte;
+    }
+}
+
+class ReporteVentas {
+    constructor() {
+        this.ventas = [];
+    }
+
+    agregarVenta(venta) {
+        this.ventas.push(venta);
+    }
+
+    generarReportePorCliente(cliente) {
+        let reporte = `Ventas de ${cliente.getNombre()}:\n`;
+        let total = 0;
+        for (const venta of this.ventas) {
+            if (venta.cliente.getIdCliente() === cliente.getIdCliente()) {
+                reporte += `${venta.generarReporte()}\n\n`;
+                total += venta.aplicarDescuento();
+            }
+        }
+        reporte += `Total gastado: $${total}`;
+        return reporte;
+    }
+
+    generarReportePorFecha(fecha) {
+        let reporte = `Ventas del ${fecha}:\n`;
+        let total = 0;
+        for (const venta of this.ventas) {
+            if (venta.fecha === fecha) {
+                reporte += `${venta.generarReporte()}\n\n`;
+                total += venta.aplicarDescuento();
+            }
+        }
+        reporte += `Total ventas: $${total}`;
+        return reporte;
+    }
+
+    calcularTotalVentas() {
+        return this.ventas.reduce((total, venta) => total + venta.aplicarDescuento(), 0);
+    }
+}
+
+function main() {
+    const inventario = new Inventario();
+    const florete = new Florete("Florete Pro", 100.0, "Acero", 400.0, 95.0, "italiano");
+    const espada = new Espada("Espada Elite", 150.0, "Carbono", 550.0, 3.5, "sin filo");
+    const sable = new Sable("Sable Curvo", 120.0, "Acero", 450.0, 12.0, 6.0);
+    inventario.agregarArma(florete, 10);
+    inventario.agregarArma(espada, 5);
+    inventario.agregarArma(sable, 8);
+
+    const cliente1 = new Cliente(1, "sergio santa", "checho@email.com", "Premium");
+    const cliente2 = new Cliente(2, "alejandro ramirez", "alejo@email.com", "Regular");
+
+    const venta1 = new Venta(1, cliente1, "2025-05-07");
+    venta1.agregarItem(florete, 2);
+    venta1.agregarItem(espada, 1);
+
+    const venta2 = new Venta(2, cliente2, "2025-05-07");
+    venta2.agregarItem(sable, 3);
+
+    if (venta1.registrarVenta(inventario)) {
+        console.log("Venta 1 registrada con éxito:");
+        console.log(venta1.generarReporte());
+    } else {
+        console.log("Error: Stock insuficiente para Venta 1");
+    }
+
+    console.log("\n");
+
+    if (venta2.registrarVenta(inventario)) {
+        console.log("Venta 2 registrada con éxito:");
+        console.log(venta2.generarReporte());
+    } else {
+        console.log("Error: Stock insuficiente para Venta 2");
+    }
+
+    const reportes = new ReporteVentas();
+    reportes.agregarVenta(venta1);
+    reportes.agregarVenta(venta2);
+
+    console.log("\nReporte por cliente (sergio santa):");
+    console.log(reportes.generarReportePorCliente(cliente1));
+
+    console.log("\nReporte por fecha (2025-05-07):");
+    console.log(reportes.generarReportePorFecha("2025-05-07"));
+}
+
+main();
