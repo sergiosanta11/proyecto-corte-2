@@ -249,8 +249,8 @@ function main() {
     inventario.agregarArma(espada, 5);
     inventario.agregarArma(sable, 8);
 
-    const cliente1 = new Cliente(1, "sergio santa", "checho@email.com", "Premium");
-    const cliente2 = new Cliente(2, "alejandro ramirez", "alejo@email.com", "Regular");
+    const cliente1 = new Cliente(1, "Sergio santa", "Sergio@email", "Premium");
+    const cliente2 = new Cliente(2, "alejandro ramirez", "alejandro@email.com", "Regular");
 
     const venta1 = new Venta(1, cliente1, "2025-05-07");
     venta1.agregarItem(florete, 2);
@@ -279,7 +279,7 @@ function main() {
     reportes.agregarVenta(venta1);
     reportes.agregarVenta(venta2);
 
-    console.log("\nReporte por cliente (sergio santa):");
+    console.log("\nReporte por cliente (Sergio santa):");
     console.log(reportes.generarReportePorCliente(cliente1));
 
     console.log("\nReporte por fecha (2025-05-07):");
